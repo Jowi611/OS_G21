@@ -1,0 +1,4 @@
+PIPE
+echo hello
+wc -c
+EXIT
