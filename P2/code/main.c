@@ -88,9 +88,9 @@ int main(){
                 continue;
             }
 
-            pid_t pid = fork();
+            pid_t pid = fork(); //we fork the process
             if(pid == 0){
-                execvp(argv[0],argv);
+                execvp(argv[0],argv);//we convert the child process into the command we entered
                 perror("execvp");
                 _exit(1);
             }
@@ -140,7 +140,7 @@ int main(){
 
             pid_t p1 = fork();
             if(p1 == 0){
-                //we send the stdout to the write end
+                //we change the output from the standard output to the write pipe.
                 dup2(fds[1], STDOUT_FILENO);
                 close(fds[0]);
                 close(fds[1]);
@@ -151,6 +151,7 @@ int main(){
             }
             pid_t p2 = fork();
             if(p2 == 0){
+                //we change the input to the read pipe instead of the standard input
                 dup2(fds[0], STDIN_FILENO);
                 close(fds[0]);
                 close(fds[1]);
