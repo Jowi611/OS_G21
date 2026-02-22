@@ -1,0 +1,1 @@
+gcc main.c parsePGM.c -o build/computeHistogramParallel -lpthread
