@@ -52,7 +52,7 @@ static int read_int(int fd, int *value, int *count)
 
     do {
         v = v * 10 + (c - '0');
-        if (read_byte(fd, &c, count) < 0)
+        if (read_byte(fd, &c, count) < 0) //
             break;
     } while (isdigit((unsigned char)c));
 
@@ -84,9 +84,9 @@ int parse_pgm_header(const char * path, int *width, int *height, int *maxval)
         return -1;
 
     /* Header fields */
-    if (read_int(fd, width,  &bytes) < 0) return -1;
-    if (read_int(fd, height, &bytes) < 0) return -1;
-    if (read_int(fd, maxval, &bytes) < 0) return -1;
+    if (read_int(fd, width,  &bytes) < 0) return -1; //return widht of image, and adds counter of bytes header
+    if (read_int(fd, height, &bytes) < 0) return -1; //retunr height of image
+    if (read_int(fd, maxval, &bytes) < 0) return -1;//return max val of grey
 
     /* Validation */
     if (*width <= 0 || *height <= 0 ||
