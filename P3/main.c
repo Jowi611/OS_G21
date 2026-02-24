@@ -18,9 +18,10 @@ typedef struct {
     const char *path;
     int offset;      // from start of file, including header
     int bytesToRead;
-    unsigned int localHist[256];
+    unsigned int localHist[256]; //the local histogram for each thread to not have race condition
 } ThreadInfo;
 
+//we pass a thread info that will be executed
 static void *worker(void *arg) {
     ThreadInfo *t = (ThreadInfo *)arg;
     //we initialize first the localHist as all 0
@@ -33,8 +34,8 @@ static void *worker(void *arg) {
         print_to_fd(2, "open (worker)" );
         return NULL;
     }
-    //we jump to the offset
-    if (lseek(fd, t->offset, SEEK_SET) == (off_t)-1) {
+    //we jump to the offset (file cursor), num bytes from start
+    if (lseek(fd, t->offset, SEEK_SET) == (off_t)-1) { //if fails, returns -1
         print_to_fd(2, "lseek (worker)");
         close(fd);
         return NULL;
@@ -47,10 +48,10 @@ static void *worker(void *arg) {
         int toRead;
 
         if(remaining > READ_BUF){
-            toRead = READ_BUF;
+            toRead = READ_BUF; //we read total capacity buffer
         }
         else{
-            toRead = remaining;
+            toRead = remaining; //we read remaining
         }
 
         int n = read(fd, buf, toRead); //we read (toRead) number of bytes from fd and store them into buf
@@ -67,7 +68,7 @@ static void *worker(void *arg) {
 
         //we go though every byte in the buffer and count how many appearences there are of each type
         for (int i = 0; i < n; i++) {
-            unsigned char pixel = buf[i];
+            unsigned char pixel = buf[i]; //each byte will store a intensity of the image [0-255]
             t->localHist[pixel]++;
         }
         remaining = remaining - n;
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 
     //we get the header info
     int width, height, maxval;
-    int headerBytes = parse_pgm_header(imagePath, &width, &height, &maxval);
+    int headerBytes = parse_pgm_header(imagePath, &width, &height, &maxval); //returns num bytes of header until strart the pixels colors
 
     //we handle the possible errors
     if (headerBytes <= 0) {
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]) {
         the pthread_create function creates the id for the thread passed in the first argument
         it tells it to run the worker function and use the info given in the struct.
         */
-        int rc = pthread_create(&threads[i], NULL, worker, &infos[i]); //we pass the worker function
+        int rc = pthread_create(&threads[i], NULL, worker, &infos[i]); //we pass the worker function, and the thread info
 
         if (rc != 0) {
             print_to_fd(1, "pthread_create failed\n");
@@ -161,7 +162,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < numThreads; i++) {
-        pthread_join(threads[i], NULL);//assure all workers have finished
+        pthread_join(threads[i], NULL);//assure all workers have finished, to join all info
     }
 
     //now we create the global historiogram and initialize it with zeros
@@ -186,8 +187,8 @@ int main(int argc, char *argv[]) {
     //for each pixel value (0-max), the number of times it appears
     for (int v = 0; v <= maxval; v++) {
         char line[64];
-        int len = snprintf(line, sizeof(line), "%d,%u\n", v, globalHist[v]);
-        write(fdout, line, len);
+        int len = snprintf(line, sizeof(line), "%d,%u\n", v, globalHist[v]); //v will be the pixel color value, and the total coutned values
+        write(fdout, line, len); //write it on the file
     }
 
     close(fdout);
